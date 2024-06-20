@@ -4,6 +4,7 @@ import { User } from "../models/users.models.js";
 import { uploadonCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/Apiresponses.js";
 import jwt from "jsonwebtoken";
+import { subscriptionSchema } from "../models/subscription.models.js";
 
 const registeruser = asynchandler(async (req, res) => {
   //get user details from the frontend
@@ -305,6 +306,9 @@ const getCurrentUser = asynchandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, req.user, "this is the current user"));
 });
+
+const getUserProfile = asynchandler(async (req, res) => {});
+
 export {
   registeruser,
   loginUser,
@@ -315,4 +319,5 @@ export {
   updateAvatar,
   updateCoverImage,
   getCurrentUser,
+  getUserProfile,
 };
