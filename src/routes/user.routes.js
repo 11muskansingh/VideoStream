@@ -14,6 +14,8 @@ import {
   updateAvatar,
   updateCoverImage,
   getCurrentUser,
+  getUserProfile,
+  getWatchHistory
 } from "../controllers/user.controllers.js";
 const router = Router();
 
@@ -36,12 +38,21 @@ router.route("/register").post(
 router.route("/login").post(loginUser);
 //verifiedJWT is used as a middleware
 router.route("/logout").post(verifiedJWT, logOutUser);
-
+router.route("/refresh-token").post(refreshAccessToken)
 router.route("/updatePassword").post(verifiedJWT, updatePassword);
-router.route("/updateOtherDetails").post(verifiedJWT, updateOtherDetails);
+router.route("/updateOtherDetails").patch(verifiedJWT, updateOtherDetails);
 router.route("/getCurrentUser").get(verifiedJWT, getCurrentUser);
 
 router
   .route("/updateavatar")
-  .post(verifiedJWT, upload.single("avatar"), updateAvatar);
+  .patch(verifiedJWT, upload.single("avatar"), updateAvatar);
+
+router
+  .route("/updateCoverImage")
+  .patch(verifiedJWT, upload.single("avatar"), updateCoverImage);
+
+  //for request coming from params
+router.route("/c/:username").get(verifiedJWT,getUserProfile);
+router.route("/getWatchHistory").get(verifiedJWT,getWatchHistory);
+
 export default router;
