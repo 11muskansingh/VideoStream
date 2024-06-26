@@ -2,12 +2,13 @@ import mongoose from "mongoose";
 
 const videoSchema = new mongoose.Schema(
   {
-    videofile: {
+    videoFile: {
       //cloudinary url
       type: String,
       required: true,
     },
     thumbnail: {
+      //cloudinary url
       type: String,
       required: true,
     },
