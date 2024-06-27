@@ -7,6 +7,7 @@ import { ApiResponse } from "../utils/Apiresponses.js";
 import { uploadonCloudinary } from "../utils/cloudinary.js";
 import { getVideoDurationInSeconds } from "get-video-duration"
 
+
 const publishVideo = asynchandler(async(req,res)=>{
   //steps to publish a video in our channel
   //get the title and description from the user
@@ -76,9 +77,70 @@ const getVideoById = asynchandler(async (req,res)=>{
 })
 
 
+const updateVideoDetails = asynchandler(async(req,res)=>{
+  //take videoid from the user using url
+  //update the tile, description, and thumbnail of the video.
+
+  const { videoId }=req.params;
+  if(!videoId)
+    throw new ApiError(400 , "The video doesnot exist");
+
+   const{ title , description}=req.body;
+     
+   const updateFields = {};
+   if(title)
+    updateFields.title=title;
+   if(description)
+    updateFields.description=description;
+   
+   const thumbnailLocalPath = await req.file?.path;
+   if(!thumbnailLocalPath)
+    throw new ApiError(400,"Thumbnail is Required to change");
+
+   const thumbnail =await uploadonCloudinary(thumbnailLocalPath);
+   if(!thumbnail)
+    throw new ApiError(400,"Thumbnail is Required to upload on cloudinary");
+
+
+
+
+  const video = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set :{
+        ...updateFields,
+        thumbnail:thumbnail?.url,
+      }
+    },
+    {
+      new:true,
+    }
+  )
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, video, "Details Updated Successfully"));
+});
+
+const deleteVideo = asynchandler( async (req,res)=>{
+       const { videoId } =req.params
+       if(!videoId)
+        throw new ApiError(400 , "The video doesnot exist");
+
+      await Video.findByIdAndDelete(videoId);
+
+      return res
+      .status(200)
+      .json(
+        new ApiResponse(200,"Video Deleted Successfully")
+      )
+});
+
+
 
 export {
     publishVideo,
     getVideoById,
-       
+    updateVideoDetails,
+     deleteVideo,  
 }
