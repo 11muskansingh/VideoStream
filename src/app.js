@@ -20,7 +20,10 @@ import userRouter from "./routes/user.routes.js";
 app.use("/api/v1/users", userRouter);
 //https://localhost:5000/api/v1/users
 
-import videoRoutes from"./routes/video.routes.js"
+import videoRoutes from "./routes/video.routes.js"
 app.use("/api/v1/videos",videoRoutes)
+
+import subscriptionRoutes from "./routes/subscription.routes.js"
+app.use("/api/v1/subscription",subscriptionRoutes);
 
 export { app };

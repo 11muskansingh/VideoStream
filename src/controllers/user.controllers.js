@@ -314,12 +314,13 @@ const getCurrentUser = asynchandler(async (req, res) => {
 const getUserProfile = asynchandler(async (req, res) => {
   //request generally comes from urls
   const {username} = await req.params;
-
+  const userid=req.user?._id;
+  if(!userid)
+    throw new ApiError(400,"Id not found");
   if(!username?.trim())
     throw new ApiError(400,"UserName not found");
 
   //here aggregation pipelines are used
-
   const profile = await User.aggregate(
     [
       //for matching the username
@@ -361,7 +362,7 @@ const getUserProfile = asynchandler(async (req, res) => {
         isSubscribed:{
           $cond: {
             if : {
-              $in : [req.user?._id , $tsubscribers.subscriber]
+              $in : [userid, "$tsubscribers.subscriber"]
             },
             then :true,
             else : false

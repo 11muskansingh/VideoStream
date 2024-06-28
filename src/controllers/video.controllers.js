@@ -136,11 +136,41 @@ const deleteVideo = asynchandler( async (req,res)=>{
       )
 });
 
+ const togglePublishStatus = asynchandler(async (req,res)=>{
+    const { videoId } =req.params;
+      //const video=await Video.findById(videoId);
+    if(!videoId)
+      throw new ApiError(400,"VideoId is required");
+
+    const video =await Video.findByIdAndUpdate(
+      videoId,
+      {
+        $set : {
+          isPublished : !ispublished,
+        }
+      },
+      {
+        new :true,
+      }
+      )
+      await video.save();
+      return res
+      .status(200)
+      .json(
+        new ApiResponse(200,video,"Published status toggeled successfullly"));
+ });
+
+ const getAllVideos =asynchandler(async(req,res)=>{
+  //yet to be completed
+ });
+
 
 
 export {
     publishVideo,
     getVideoById,
     updateVideoDetails,
-     deleteVideo,  
+     deleteVideo, 
+     togglePublishStatus, 
+     getAllVideos,
 }
