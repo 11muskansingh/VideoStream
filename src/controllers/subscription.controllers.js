@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import { SubscriptionSchema } from "../models/subscription.models.js";
 import mongoose from "mongoose";
 
+
+
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers =asynchandler(async(req,res)=>{
       const { channelId } =req.params
@@ -84,7 +86,50 @@ const getSubscribedChannels = asynchandler(async (req, res) => {
 
 })
 
+
+const toggleSubscription = asynchandler(async (req, res) => {
+      const { channelId } = req.params
+      const userId =req.user?._id;
+      if(!channelId)
+        throw new ApiError(200,"The channel id is required");
+
+      const existingSubscriber = await SubscriptionSchema.findOne({
+         channel : new mongoose.Types.ObjectId(channelId),
+        subscriber : new mongoose.Types.ObjectId(userId)
+      });
+
+      if(existingSubscriber)
+        {
+          await SubscriptionSchema.deleteOne({
+              _id: userId
+          })
+
+          return res
+          .status(200)
+          .json(
+            new ApiResponse(200 , "User Unsubscribed Successfully")
+          )
+        }
+        else
+        {
+          const newSubscriber = await      SubscriptionSchema.create({
+            subscriber:new mongoose.Types.ObjectId(userId),
+            channel : new mongoose.Types.ObjectId(channelId),
+            subscribedAt: new Date()
+           });
+           await newSubscriber.save();
+
+           if(!newSubscriber)
+            throw new ApiError(500,"Not able to Subscribe the channel");
+
+           return res.status(200).json(
+            new ApiResponse(200, newSubscriber, "User subscribed successfully")
+        );
+        } 
+})
+
 export {
     getUserChannelSubscribers,
     getSubscribedChannels,
+    toggleSubscription,
 }
