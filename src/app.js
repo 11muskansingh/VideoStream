@@ -26,4 +26,9 @@ app.use("/api/v1/videos",videoRoutes)
 import subscriptionRoutes from "./routes/subscription.routes.js"
 app.use("/api/v1/subscription",subscriptionRoutes);
 
+
+import playlistRoutes from "./routes/playlist.routes.js"
+app.use("/api/v1/playlist",playlistRoutes);
+
+
 export { app };

@@ -6,10 +6,12 @@ const playlistSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref :"User"
         },
-        videos:{
-            type: mongoose.Schema.Types.ObjectId,
+        videos:[
+            {
+                type: mongoose.Schema.Types.ObjectId,
             ref :"Video"
-        },
+            }
+        ],
         name:{
             type: String,
             required:true

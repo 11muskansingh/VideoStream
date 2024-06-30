@@ -100,9 +100,7 @@ const toggleSubscription = asynchandler(async (req, res) => {
 
       if(existingSubscriber)
         {
-          await SubscriptionSchema.deleteOne({
-              _id: userId
-          })
+          await SubscriptionSchema.findByIdAndDelete(userId);
 
           return res
           .status(200)
