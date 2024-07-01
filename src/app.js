@@ -31,4 +31,9 @@ import playlistRoutes from "./routes/playlist.routes.js"
 app.use("/api/v1/playlist",playlistRoutes);
 
 
+import tweetRoutes from "./routes/tweets.routes.js"
+app.use("/api/v1/tweet",tweetRoutes);
+
+
+
 export { app };
