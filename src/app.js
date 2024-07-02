@@ -35,5 +35,9 @@ import tweetRoutes from "./routes/tweets.routes.js"
 app.use("/api/v1/tweet",tweetRoutes);
 
 
+import commentRoutes from "./routes/comments.routes.js"
+app.use("/api/v1/comment",commentRoutes);
+
+
 
 export { app };
