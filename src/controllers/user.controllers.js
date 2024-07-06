@@ -303,8 +303,6 @@ const updateCoverImage = asynchandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Cover Image Updated Successfully"));
 });
 
-
-
 const getCurrentUser = asynchandler(async (req, res) => {
   return res
     .status(200)
@@ -313,151 +311,136 @@ const getCurrentUser = asynchandler(async (req, res) => {
 
 const getUserProfile = asynchandler(async (req, res) => {
   //request generally comes from urls
-  const {username} = await req.params;
-  const userid=req.user?._id;
-  if(!userid)
-    throw new ApiError(400,"Id not found");
-  if(!username?.trim())
-    throw new ApiError(400,"UserName not found");
+  const { username } = await req.params;
+  const userid = req.user?._id;
+  if (!userid) throw new ApiError(400, "Id not found");
+  if (!username?.trim()) throw new ApiError(400, "UserName not found");
 
   //here aggregation pipelines are used
-  const profile = await User.aggregate(
-    [
-      //for matching the username
-      {
-      $match : 
-      { 
-        username:username
-      }
+  const profile = await User.aggregate([
+    //for matching the username
+    {
+      $match: {
+        username: username,
+      },
     },
     {
       //for finding the subscribers of the channel we are in user right now
-          $lookup :
-          {
-            from:"subscriptionschemas",
-            localField:"_id",
-            foreignField:"channel",
-            as:"tsubscribers"
-          }
+      $lookup: {
+        from: "subscriptionschemas",
+        localField: "_id",
+        foreignField: "channel",
+        as: "tsubscribers",
+      },
     },
     {
       //for finding the channel we have subscribed
-      $lookup:
-          {
-            from:"subscriptionschemas",
-            localField:"_id",
-            foreignField:"subscriber",
-            as :"totalChannelSubscribed"
-          }
+      $lookup: {
+        from: "subscriptionschemas",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "totalChannelSubscribed",
+      },
     },
     {
       //adding extra fields in the model
-      $addFields:{
-        totalSubscribersCount:{
-          $size:"$tsubscribers"
+      $addFields: {
+        totalSubscribersCount: {
+          $size: "$tsubscribers",
         },
-        totalChannelSubscribedCount:{
-          $size:"$totalChannelSubscribed"
+        totalChannelSubscribedCount: {
+          $size: "$totalChannelSubscribed",
         },
-        isSubscribed:{
+        isSubscribed: {
           $cond: {
-            if : {
-              $in : [userid, "$tsubscribers.subscriber"]
+            if: {
+              $in: [userid, "$tsubscribers.subscriber"],
             },
-            then :true,
-            else : false
-          }
-        }
-      }
+            then: true,
+            else: false,
+          },
+        },
+      },
     },
     {
-      //what info we want to show 
-      $project : {
-        fullname:1,
-        username:1,
-        avatar:1,
-        coverImage:1,
-        totalSubscribersCount:1,
-        totalChannelSubscribedCount:1,
-        isSubscribed:1,
-      }
-    }
-    ]
-  )
-  if(!profile?.length)
-    throw new ApiError(404,"Profile not Found")
+      //what info we want to show
+      $project: {
+        fullname: 1,
+        username: 1,
+        avatar: 1,
+        coverImage: 1,
+        totalSubscribersCount: 1,
+        totalChannelSubscribedCount: 1,
+        isSubscribed: 1,
+      },
+    },
+  ]);
+  if (!profile?.length) throw new ApiError(404, "Profile not Found");
 
   console.log(profile);
 
   return res
-  .status(200)
-  .json(
-     new ApiResponse(200,profile[0],"This is the User profile")
-  )
-
+    .status(200)
+    .json(new ApiResponse(200, profile[0], "This is the User profile"));
 });
 
-
 //for getting the watch history
-const getWatchHistory = asynchandler(async(req,res)=>{
+const getWatchHistory = asynchandler(async (req, res) => {
   //req.user._id returns a string and when this is passed to find the user mongoose internally handles all the things and we donot have to convert.
   //Using pipilines
 
-  const user= await User.aggregate([
+  const user = await User.aggregate([
     {
-      $match:{
-        _id:new mongoose.Types.ObjectId(req.user?._id)
-      }
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user?._id),
+      },
     },
     {
       //for watchHistory Lookup
-      $lookup:{
-        from:"videos",
-        localField:"watchHistory",
-        foreignField:"_id",
-        as:"watchHistory",
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
         //nested pipeline for the owner field in the video model
-        pipeline:[
+        pipeline: [
           {
-            $lookup:{
-              from:"users",
-              localField:"owner",
-              foreignField:"_id",
-              as:"owner",
-              pipeline:[
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
                 {
-                    //pipeline for projecting only the selected field from the user.
-                    $project:{
-                      username:1,
-                      fullname:1,
-                      avatar:1
-                    }
-                }
-              ]
-            }
+                  //pipeline for projecting only the selected field from the user.
+                  $project: {
+                    username: 1,
+                    fullname: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
           },
           {
-            $addFields:{
-              owner:{
-                $first: "$owner"
-            }
-            }
-          }
-        ]
-      }
-    }
-  ])
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
   console.log(user);
 
   return res
-         .status(200)
-         .json(
-          new ApiResponse(200,user[0],"Watch History is fetched Successfully")
-         )
-
-
-})
-
+    .status(200)
+    .json(
+      new ApiResponse(200, user[0], "Watch History is fetched Successfully")
+    );
+});
 
 export {
   registeruser,
@@ -470,5 +453,5 @@ export {
   updateCoverImage,
   getCurrentUser,
   getUserProfile,
-  getWatchHistory
+  getWatchHistory,
 };
