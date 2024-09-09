@@ -34,9 +34,22 @@ const videoSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    likes: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
     isPublished: {
       type: Boolean,
       default: true,
+    },
+    category: {
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      required: true,
     },
   },
   {

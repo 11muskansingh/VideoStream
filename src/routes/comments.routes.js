@@ -12,8 +12,9 @@ const router = Router();
 
 router.route("/add/:videoId").post(verifiedJWT, addComment);
 
-router.route("/c/:commentId").patch(verifiedJWT, updateComment);
+router.route("/updateComment/:commentId").patch(updateComment);
 
-router.route("/c/:commentId").delete(verifiedJWT, deleteComment);
+router.route("/deleteComment/:commentId").delete(deleteComment);
+router.route("/get/:videoId").get(getVideoComments);
 
 export default router;

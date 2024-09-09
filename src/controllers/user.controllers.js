@@ -128,7 +128,8 @@ const loginUser = asynchandler(async (req, res) => {
   //for security purpose of our cookies we set some options so that the cookies can only be modified from the server side and not from the frontend
   const options = {
     httponly: true,
-    secure: true,
+    secure: false,
+    sameSite: "None",
   };
   //new database call so that all the updated information can come in the new user
   const updatedloggedinUser = await User.findById(currentUser._id).select(
@@ -140,6 +141,7 @@ const loginUser = asynchandler(async (req, res) => {
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(200, updatedloggedinUser, "Logged In SuccessFully"));
+    
 });
 
 const logOutUser = asynchandler(async (req, res) => {
@@ -158,6 +160,7 @@ const logOutUser = asynchandler(async (req, res) => {
   const options = {
     httponly: true,
     secure: true,
+    sameSite: "None",
   };
 
   return res

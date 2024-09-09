@@ -6,12 +6,12 @@ import { User } from "../models/users.models.js";
 //res is not used inside the function so can be replaced with a underscore
 const verifiedJWT = asynchandler(async (req, _, next) => {
   try {
-    //Bearer <token>
+    console.log("Cookies received:", req.cookies);
     const aToken =
       req.cookies?.accessToken ||
-      req.header("Authorisation")?.replace("Bearer ", "");
+      req.header("Authorization")?.replace("Bearer ", "");
 
-    console.log(aToken);
+    console.log("The token is ", aToken);
 
     if (!aToken) throw new ApiError("401", "Unauthorised Access");
 
