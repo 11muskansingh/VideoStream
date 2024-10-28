@@ -12,6 +12,7 @@ import {
   fetchRelatedVideos,
   fetchVideoDetails,
 } from "../utils/fetchDataFromAPI.js";
+import { Like } from "../models/likes.models.js";
 
 const publishVideo = asynchandler(async (req, res) => {
   //steps to publish a video in our channel
@@ -230,24 +231,107 @@ const getAllRelatedVideos = asynchandler(async (req, res) => {
 
 const getVideoDetail = asynchandler(async (req, res) => {
   const { videoId } = req.params;
+  const userId = req.user?._id;
+
   if (!videoId) {
     return res.status(400).json({ error: "VideoId is required" });
   }
-  console.log(`Video ID received: ${videoId}`);
+  console.log(userId);
+
+  const isObjectId =
+    mongoose.Types.ObjectId.isValid(videoId) && videoId.length === 24;
+  const videoIdCondition = isObjectId
+    ? { videos: new mongoose.Types.ObjectId(videoId) }
+    : { externalVideoId: videoId };
+
   try {
-    const isObjectId =
-      mongoose.Types.ObjectId.isValid(videoId) && videoId.length === 24;
+    const liked = await Like.findOne({
+      likedBy: new mongoose.Types.ObjectId(userId),
+      ...videoIdCondition,
+    });
+
+    const isLiked = !!liked;
+
     let video;
     if (isObjectId) {
       video = await Video.findById(videoId).populate("owner");
     } else {
       video = await fetchVideoDetails(videoId);
     }
-    return res.status(200).json(video);
+
+    return res.status(200).json({ video, isLiked });
   } catch (error) {
     console.error("Error fetching YouTube data:", error);
     res.status(500).json({ error: "Error fetching YouTube data" });
   }
+});
+
+const addVideoToWatchHistory = asynchandler(async (req, res) => {
+  const { videoId } = req.params;
+  if (!videoId) return res.status(404).json({ message: "Video not found" });
+  // const video = await Video.findById(videoId);
+  // if (!video) {
+  //   return res.status(404).json({ message: "Video not found" });
+  // }
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  if (!user.watchHistory) {
+    user.watchHistory = [];
+  }
+
+  let idx = user.watchHistory.indexOf(videoId);
+  if (idx !== -1) user.watchHistory.splice(idx, 1);
+
+  user.watchHistory.unshift(videoId);
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Video Added in watch History Successfully"));
+});
+
+const removeVideoFromWatchHistory = asynchandler(async (req, res) => {
+  const { videoId } = req.params;
+  if (!videoId) throw new ApiError(400, "Give correct VideoId");
+
+  const user = await User.findById(req.user._id);
+  let idx = await user.watchHistory.indexOf(videoId);
+
+  if (idx !== -1) {
+    user.watchHistory.splice(idx, 1);
+    try {
+      await user.save();
+    } catch (error) {
+      if (error.name === "VersionError") {
+        // Handle the version conflict, e.g., re-fetch the user and try again
+        const freshUser = await User.findById(req.user._id);
+        freshUser.watchHistory.splice(
+          freshUser.watchHistory.indexOf(videoId),
+          1
+        );
+        await freshUser.save();
+      } else {
+        throw error; // Other types of errors should be thrown as is
+      }
+    }
+  } else throw new ApiError(400, "Video to be deleted does not exists");
+
+  res.status(200).json(new ApiResponse(200, "Video removed Successfully"));
+});
+
+const clearAllWatchHistory = asynchandler(async (req, res) => {
+  const userid = req.user?._id;
+  const user = await User.findById(userid);
+
+  if (!user) throw new ApiError(400, "User Not found");
+
+  user.watchHistory = [];
+  await user.save();
+
+  res.status(200).json(new ApiResponse(200, "All Videos removed Successfully"));
 });
 
 export {
@@ -260,4 +344,7 @@ export {
   getVideosByCategory,
   getAllRelatedVideos,
   getVideoDetail,
+  addVideoToWatchHistory,
+  removeVideoFromWatchHistory,
+  clearAllWatchHistory,
 };

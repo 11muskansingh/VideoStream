@@ -98,8 +98,8 @@ const getVideoComments = asynchandler(async (req, res) => {
   }
   if (comments.length === 0) {
     return res
-      .status(404)
-      .json(new ApiResponse(404, [], "No comments found for external video"));
+      .status(200)
+      .json(new ApiResponse(200, [], "No comments found for external video"));
   }
   return res
     .status(200)

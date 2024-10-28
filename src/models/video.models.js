@@ -54,7 +54,8 @@ const videoSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
+  { versionKey: false }
 );
 
 export const Video = mongoose.model("Video", videoSchema);

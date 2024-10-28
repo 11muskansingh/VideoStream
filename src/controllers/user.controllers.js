@@ -2,10 +2,13 @@ import mongoose from "mongoose";
 import { ApiError } from "../utils/Apierrors.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { User } from "../models/users.models.js";
+import { Video } from "../models/video.models.js";
 //import{ Video } from "../models/video.models.js";
 import { uploadonCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/Apiresponses.js";
 import jwt from "jsonwebtoken";
+
+import { fetchVideoDetails } from "../utils/fetchDataFromAPI.js";
 //import { SubscriptionSchema } from "../models/subscription.models.js";
 
 const registeruser = asynchandler(async (req, res) => {
@@ -71,7 +74,17 @@ const registeruser = asynchandler(async (req, res) => {
   );
   console.log(createdUser);
   if (!createdUser) throw new ApiError(500, "Not able to Register the user");
-
+  const { accessToken, refreshToken } = await generateAccessandRefreshTokens(
+    createdUser._id
+  );
+  const options = {
+    secure: true,
+    sameSite: "None",
+    httpOnly: true,
+  };
+  res
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options);
   return res
     .status(200)
     .json(new ApiResponse(200, createdUser, "SuccessFull Registration"));
@@ -127,21 +140,22 @@ const loginUser = asynchandler(async (req, res) => {
 
   //for security purpose of our cookies we set some options so that the cookies can only be modified from the server side and not from the frontend
   const options = {
-    httponly: true,
-    secure: false,
+    secure: true,
     sameSite: "None",
+    httpOnly: true,
   };
   //new database call so that all the updated information can come in the new user
   const updatedloggedinUser = await User.findById(currentUser._id).select(
     "-password -refreshTokens"
   );
   console.log(updatedloggedinUser);
+  res
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options);
+
   return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(200, updatedloggedinUser, "Logged In SuccessFully"));
-    
 });
 
 const logOutUser = asynchandler(async (req, res) => {
@@ -158,7 +172,7 @@ const logOutUser = asynchandler(async (req, res) => {
   );
 
   const options = {
-    httponly: true,
+    httpOnly: true,
     secure: true,
     sameSite: "None",
   };
@@ -391,58 +405,97 @@ const getUserProfile = asynchandler(async (req, res) => {
 const getWatchHistory = asynchandler(async (req, res) => {
   //req.user._id returns a string and when this is passed to find the user mongoose internally handles all the things and we donot have to convert.
   //Using pipilines
+  const userId = req.user?._id;
 
-  const user = await User.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(req.user?._id),
-      },
-    },
-    {
-      //for watchHistory Lookup
-      $lookup: {
-        from: "videos",
-        localField: "watchHistory",
-        foreignField: "_id",
-        as: "watchHistory",
-        //nested pipeline for the owner field in the video model
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "owner",
-              foreignField: "_id",
-              as: "owner",
-              pipeline: [
-                {
-                  //pipeline for projecting only the selected field from the user.
-                  $project: {
-                    username: 1,
-                    fullname: 1,
-                    avatar: 1,
-                  },
-                },
-              ],
-            },
-          },
-          {
-            $addFields: {
-              owner: {
-                $first: "$owner",
-              },
-            },
-          },
-        ],
-      },
-    },
-  ]);
-  console.log(user);
+  const theUser = await User.findById(userId).select("watchHistory");
+  if (!theUser || !theUser.watchHistory || theUser.watchHistory.length === 0) {
+    return res.status(200).json({ message: "No watch history found" });
+  }
+
+  const dbVideoIds = [];
+  const apiVideoIds = [];
+
+  theUser.watchHistory.forEach((id) => {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      dbVideoIds.push(new mongoose.Types.ObjectId(id));
+    } else {
+      apiVideoIds.push(id);
+    }
+  });
+  console.log("Video ids are", dbVideoIds);
+  let dbVideos = [];
+  if (dbVideoIds.length > 0) {
+    dbVideos = await Video.find({ _id: { $in: dbVideoIds } })
+      .populate({
+        path: "owner",
+        select: "username fullname avatar",
+      })
+      .exec();
+  }
+
+  console.log("Pipeline result:", dbVideos);
+
+  const apiVideoPromises = apiVideoIds.map(async (videoId) => {
+    try {
+      const videoDetails = await fetchVideoDetails(videoId);
+      return videoDetails;
+    } catch (error) {
+      console.error(`Error fetching video from API with ID ${videoId}:`, error);
+      return null; // Handle API errors by returning null
+    }
+  });
+
+  const apiVideos = (await Promise.all(apiVideoPromises)).filter(
+    (video) => video !== null
+  );
+
+  const combinedVideos = [...apiVideos, ...dbVideos];
+
+  console.log("db Videos are", dbVideos);
 
   return res
     .status(200)
     .json(
-      new ApiResponse(200, user[0], "Watch History is fetched Successfully")
+      new ApiResponse(
+        200,
+        combinedVideos,
+        "Watch History is fetched Successfully"
+      )
     );
+});
+
+const getUploadedVideos = asynchandler(async (req, res) => {
+  const userId = req.user?._id;
+  if (!userId) {
+    return res.status(400).json({ message: "User not found" });
+  }
+
+  try {
+    const uploadedVideos = await Video.find({ owner: userId })
+      .populate({
+        path: "owner",
+      })
+      // .populate({
+      //   path: "owner",
+      // })
+      .exec();
+    if (!uploadedVideos || uploadedVideos.length === 0) {
+      return res.status(200).json({ message: "No uploaded videos found" });
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          uploadedVideos,
+          "Uploaded videos fetched successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error fetching uploaded videos:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 export {
@@ -457,4 +510,5 @@ export {
   getCurrentUser,
   getUserProfile,
   getWatchHistory,
+  getUploadedVideos,
 };

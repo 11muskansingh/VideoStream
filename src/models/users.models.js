@@ -43,14 +43,15 @@ const userSchema = new mongoose.Schema(
     },
     watchHistory: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Video",
+        type: String,
+        default: [],
       },
     ],
   },
   {
     timestamps: true,
-  }
+  },
+  { versionKey: false }
 );
 
 //some hooks or middlewares of mongoose are used

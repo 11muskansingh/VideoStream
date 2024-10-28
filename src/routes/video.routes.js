@@ -10,6 +10,9 @@ import {
   getVideosByCategory,
   getAllRelatedVideos,
   getVideoDetail,
+  addVideoToWatchHistory,
+  removeVideoFromWatchHistory,
+  clearAllWatchHistory,
 } from "../controllers/video.controllers.js";
 import mongoose from "mongoose";
 
@@ -37,8 +40,16 @@ router
 
 router.route("/c/:videoId").delete(verifiedJWT, deleteVideo);
 
-router.route("/all").get(getAllVideos);
+router.route("/all").get(verifiedJWT, getAllVideos);
 router.route("/category/:category").get(getVideosByCategory);
 router.route("/related/:videoId").get(getAllRelatedVideos);
-router.route("/info/:videoId").get(getVideoDetail);
+router.route("/info/:videoId").get(verifiedJWT, getVideoDetail);
+
+router.route("/addVideo/:videoId").post(verifiedJWT, addVideoToWatchHistory);
+
+router
+  .route("/deleteVideoFromHistory/:videoId")
+  .delete(verifiedJWT, removeVideoFromWatchHistory);
+router.route("/deleteHistory").delete(verifiedJWT, clearAllWatchHistory);
+
 export default router;

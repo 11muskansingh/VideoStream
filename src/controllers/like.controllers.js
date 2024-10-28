@@ -4,17 +4,28 @@ import { asynchandler } from "../utils/asynchandler.js";
 import { ApiResponse } from "../utils/Apiresponses.js";
 import { Like } from "../models/likes.models.js";
 import { User } from "../models/users.models.js";
+import { Video } from "../models/video.models.js";
+import { fetchVideoDetails } from "../utils/fetchDataFromAPI.js";
 //TODO: toggle like on video
 const toggleVideoLike = asynchandler(async (req, res) => {
   const { videoId } = req.params;
-
   if (!videoId) throw new ApiError(400, " Video Id is required");
-
   const userId = req.user?._id;
 
   const liked = await Like.findOne({
     likedBy: new mongoose.Types.ObjectId(userId),
-    videos: new mongoose.Types.ObjectId(videoId),
+    $or: [
+      {
+        videos: mongoose.Types.ObjectId.isValid(videoId)
+          ? new mongoose.Types.ObjectId(videoId)
+          : null,
+      },
+      {
+        externalVideoId: mongoose.Types.ObjectId.isValid(videoId)
+          ? null
+          : videoId,
+      },
+    ],
   });
 
   if (liked) {
@@ -27,12 +38,14 @@ const toggleVideoLike = asynchandler(async (req, res) => {
   } else {
     const newLike = await Like.create({
       likedBy: userId,
-      videos: videoId,
+      videos: mongoose.Types.ObjectId.isValid(videoId) ? videoId : undefined,
+      externalVideoId: mongoose.Types.ObjectId.isValid(videoId)
+        ? undefined
+        : videoId,
       likedAt: new Date(),
     });
 
     if (!newLike) throw new ApiError(500, "Problem liking the video");
-
     return res
       .status(200)
       .json(new ApiResponse(200, newLike, "Video Liked successfully"));
@@ -109,7 +122,7 @@ const toggleTweetLike = asynchandler(async (req, res) => {
 
 //TODO: get all liked videos by user
 const getLikedVideosByUser = asynchandler(async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user?._id;
 
   const likedVideos = await User.aggregate([
     {
@@ -125,22 +138,65 @@ const getLikedVideosByUser = asynchandler(async (req, res) => {
         as: "alllikedVideos",
       },
     },
-    {
-      $addFields: {
-        videosLiked: {
-          videosLiked: "$alllikedVideos",
-        },
-      },
-    },
   ]);
+
+  console.log("All liked video", likedVideos);
+
+  if (
+    !likedVideos ||
+    likedVideos.length === 0 ||
+    !Array.isArray(likedVideos[0].alllikedVideos) ||
+    likedVideos[0].alllikedVideos.length === 0
+  ) {
+    return res.status(200).json({ message: "No liked videos found" });
+  }
+
+  const dbVideoIds = [];
+  const apiVideoIds = [];
+
+  likedVideos[0].alllikedVideos.forEach((video) => {
+    if (video.externalVideoId) {
+      apiVideoIds.push(video.externalVideoId);
+    } else if (video.videos) {
+      dbVideoIds.push(video.videos);
+    }
+  });
+
+  let dbVideos = [];
+  if (dbVideoIds.length > 0) {
+    dbVideos = await Video.find({ _id: { $in: dbVideoIds } })
+      .populate({
+        path: "owner",
+        select: "username fullname avatar",
+      })
+      .exec();
+  }
+  console.log("Pipeline result:", dbVideos);
+  const apiVideoPromises = apiVideoIds.map(async (videoId) => {
+    try {
+      const videoDetails = await fetchVideoDetails(videoId);
+      return videoDetails;
+    } catch (error) {
+      console.error(`Error fetching video from API with ID ${videoId}:`, error);
+      return null;
+    }
+  });
+
+  const apiVideos = (await Promise.all(apiVideoPromises)).filter(
+    (video) => video !== null
+  );
+
+  const combinedVideos = [...apiVideos, ...dbVideos];
+
+  console.log("db Videos are", dbVideos);
 
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        likedVideos[0].videosLiked,
-        "All liked Videos fetched successfully"
+        combinedVideos,
+        "All Liked Video fetched successfully"
       )
     );
 });
