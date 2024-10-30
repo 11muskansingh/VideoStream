@@ -6,7 +6,7 @@ const app = express();
 app.use(
   cors({
     origin: "https://you-view-teal.vercel.app/",
-    methods: {"POST", "GET"},
+    methods: ["POST", "GET"],
     credentials: true,
   })
 );
