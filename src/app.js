@@ -3,11 +3,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 const app = express();
-app.options("*", cors({
-  origin: "https://you-view-teal.vercel.app",
+const corsOptions = {
+  origin: '*',
   methods: ["POST", "GET", "PUT", "DELETE", "PATCH"],
-  credentials: true,
-}));
+  credentials: true,  
+};
+app.use(cors(corsOptions));
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "https://you-view-teal.vercel.app");
