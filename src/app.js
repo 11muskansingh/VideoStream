@@ -9,6 +9,13 @@ app.options("*", cors({
   credentials: true,
 }));
 
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "https://you-view-teal.vercel.app");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, PATCH");
+  res.sendStatus(200);
+});
+
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 app.use(express.static("public"));
