@@ -3,13 +3,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 const app = express();
-app.use(
-  cors({
-    origin: "*",
-    methods: ["POST", "GET", "PUT", "DELETE", "PATCH"],
-    credentials: true,
-  })
-);
+app.options("*", cors({
+  origin: "https://you-view-teal.vercel.app",
+  methods: ["POST", "GET", "PUT", "DELETE", "PATCH"],
+  credentials: true,
+}));
+
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 app.use(express.static("public"));
