@@ -4,18 +4,11 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 const corsOptions = {
-  origin: '*',
+  origin: "*",
   methods: ["POST", "GET", "PUT", "DELETE", "PATCH"],
-  credentials: true,  
 };
-app.use(cors(corsOptions));
 
-app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "https://you-view-teal.vercel.app");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, PATCH");
-  res.sendStatus(200);
-});
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
