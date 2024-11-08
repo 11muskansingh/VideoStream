@@ -4,28 +4,28 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 const corsOptions = {
-  origin: "*",
+  origin: "https://you-view-teal.vercel.app", // your frontend URL 
   methods: ["POST", "GET", "PUT", "DELETE", "PATCH"],
+  credentials: true, // allows cookies and authorization headers
 };
 
+// Apply CORS with the specified options
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // handle preflight requests
 
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// app.get("/check-cookies", (req, res) => {
-//   console.log(req.cookies);
-//   console.log(res.getHeaders());
-//   res.json({ cookies: req.cookies });
-// });
+// Test route to check CORS configuration
+app.get("/test-cors", (req, res) => {
+  res.json({ message: "CORS is configured correctly!" });
+});
 
-//calling routes
+// Import and apply routes
 import userRouter from "./routes/user.routes.js";
-//route declaration
 app.use("/api/v1/users", userRouter);
-//https://localhost:5000/api/v1/users
 
 import videoRoutes from "./routes/video.routes.js";
 app.use("/api/v1/videos", videoRoutes);
