@@ -23,6 +23,11 @@ app.get("/test-cors", (req, res) => {
   res.json({ message: "CORS is configured correctly!" });
 });
 
+app.get("/", (req, res) => {
+  res.send("Backend is running!");
+});
+
+
 // Import and apply routes
 import userRouter from "./routes/user.routes.js";
 app.use("/api/v1/users", userRouter);
