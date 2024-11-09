@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 const corsOptions = {
-  origin: "https://you-view-teal.vercel.app", // your frontend URL 
+  origin: "*", // your frontend URL 
   methods: ["POST", "GET", "PUT", "DELETE", "PATCH"],
   credentials: true, // allows cookies and authorization headers
 };
