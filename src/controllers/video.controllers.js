@@ -6,6 +6,8 @@ import { ApiError } from "../utils/Apierrors.js";
 import { ApiResponse } from "../utils/Apiresponses.js";
 import { uploadonCloudinary } from "../utils/cloudinary.js";
 import { getVideoDurationInSeconds } from "get-video-duration";
+import ffmpegPath from "ffmpeg-static";
+import { promisify } from "util";
 import { getChannelData } from "../utils/fetchDataFromAPI.js";
 import {
   fetchSelectedCategoryData,
@@ -45,6 +47,8 @@ const publishVideo = asynchandler(async (req, res) => {
 
   const thumbnail = await uploadonCloudinary(thumbnailLocalPath);
   if (!thumbnail) throw new ApiError(400, "Thumbnail is Required to upload");
+
+  getVideoDurationInSeconds.setFfprobePath(ffmpegPath);
 
   const duration = await getVideoDurationInSeconds(videoLocalPath);
   if (!duration) throw new ApiError(500, "Failed to get video duration");
