@@ -4,9 +4,6 @@
   "description": "",
   "type": "module",
   "main": "index.js",
-  "engines":{
-    "node":"14.x"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
