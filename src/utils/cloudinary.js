@@ -9,19 +9,35 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadonCloudinary = async (filepath) => {
+const uploadonCloudinary = async (files) => {
   try {
-    if (!filepath) return null;
-    //upload file on cloudinary
-    const response = await cloudinary.uploader.upload(filepath, {
-      resource_type: "auto",
+    if (!files || !Array.isArray(files)) return [];
+
+    // Map through each file and upload to Cloudinary
+    const uploadPromises = files.map((file) => {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { resource_type: "auto", public_id: file.originalname },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+
+        // Pipe the file buffer into the upload stream
+        uploadStream.end(file.buffer);
+      });
     });
-    //file uploaded successfully
-    console.log("File uploaded successfully", response.url);
-    return response;
+
+    // Wait for all files to be uploaded
+    const responses = await Promise.all(uploadPromises);
+    console.log("Files uploaded successfully", responses);
+
+    return responses[0]; // Return the first file's response (URL)
   } catch (error) {
-    fs.unlinkSync(filepath); //remove the temporary saved file from our server
+    console.error("Error uploading files to Cloudinary:", error);
     return null;
   }
 };
+
 export { uploadonCloudinary };

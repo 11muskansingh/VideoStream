@@ -33,7 +33,7 @@ const publishVideo = asynchandler(async (req, res) => {
       "Both the title and the description fields are required"
     );
 
-  const videoLocalPath = await req.files?.videoFile[0]?.path;
+  const videoLocalPath = await req.files?.videoFile[0]?.buffer;
   if (!videoLocalPath)
     throw new ApiError(400, "Video is Required to upload on server");
 
@@ -41,7 +41,7 @@ const publishVideo = asynchandler(async (req, res) => {
   if (!videoFile)
     throw new ApiError(400, "Video is Required to upload on cloudinary");
 
-  const thumbnailLocalPath = await req.files?.thumbnail[0]?.path;
+  const thumbnailLocalPath = await req.files?.thumbnail[0]?.buffer;
   if (!thumbnailLocalPath)
     throw new ApiError(400, "Thumbnail is Required to upload");
 

@@ -42,7 +42,8 @@ const registeruser = asynchandler(async (req, res) => {
     throw new ApiError(409, "User with email or username already exists");
 
   //multer working here to save files on our server temporarily
-  const avatarLocalPath = await req.files?.avatar[0]?.path;
+  console.log(req.files);
+  const avatarLocalPath = await req.files?.avatar[0]?.buffer;
   //const coverImageLocalFilePath = await req.files?.coverImage[0]?.path;
   let coverImageLocalPath;
   if (
@@ -50,13 +51,20 @@ const registeruser = asynchandler(async (req, res) => {
     Array.isArray(req.files.coverImage) &&
     req.files.coverImage.length > 0
   ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
+    coverImageLocalPath = await req.files.coverImage[0].buffer;
   }
 
   if (!avatarLocalPath) throw new ApiError(400, "Avatar file is required");
 
-  const avatar = await uploadonCloudinary(avatarLocalPath);
-  const coverImage = await uploadonCloudinary(coverImageLocalPath);
+  const avatar = await uploadonCloudinary([
+    { buffer: avatarLocalPath, originalname: req.files.avatar[0].originalname },
+  ]);
+  const coverImage = await uploadonCloudinary([
+    {
+      buffer: coverImageLocalPath,
+      originalname: req.files.coverImage[0].originalname,
+    },
+  ]);
 
   if (!avatar) throw new ApiError(400, "Avatar file is required");
 
