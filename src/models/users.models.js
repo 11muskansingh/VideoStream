@@ -69,6 +69,9 @@ userSchema.pre("save", async function (next) {
 
 //Now create a function to check if the password entered is correct is not. for that we need to create a meathod.
 userSchema.methods.isPasswordCorrect = async function (password) {
+  console.log(password);
+  console.log(this.password);
+  
   return await bcrypt.compare(password, this.password);
 };
 
